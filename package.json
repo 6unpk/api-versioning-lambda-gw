@@ -1,0 +1,33 @@
+{
+  "name": "serverless-api-verioning",
+  "version": "1.0.0",
+  "description": ".",
+  "main": "handler.js",
+  "scripts": {
+    "deploy": "sls deploy --config serverless.ts",
+    "clean": "sls remove",
+    "test": "ts-node -T src/handlers/echo.ts"
+  },
+  "author": "",
+  "license": "MIT",
+  "packageManager": "yarn@3.2.4",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.106",
+    "@types/eslint": "^8",
+    "@types/serverless": "^3.12.8",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "serverless": "^3.22.0",
+    "serverless-webpack": "^5.10.0",
+    "ts-loader": "^9.4.1",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.1.0",
+    "tsconfig-paths-webpack-plugin": "^4.0.0",
+    "webpack": "^5.74.0",
+    "webpack-node-externals": "^3.0.0"
+  },
+  "dependencies": {
+    "typescript": "^4.8.4"
+  }
+}

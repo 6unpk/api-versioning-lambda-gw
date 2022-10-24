@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "strictNullChecks": true,
+    "strict": false,
+    "declaration": true,
+    "module": "commonjs",
+    "target": "ES2020",
+    "outDir": "dist"
+  },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
+  "exclude": [
+    "**/serverless*.ts",
+    "**/.yarn",
+    "**/.serverless",
+    "**/.webpack",
+    "**/_warmup",
+    "**/.vscode",
+    "node_modules"
+  ],
+}

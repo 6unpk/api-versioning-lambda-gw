@@ -1,0 +1,29 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+
+      - name: install ts-node
+        working-directory: ./
+        run: |
+          npm install -g typescript ts-node 
+          npm install tsconfig-paths
+
+      - name: generate document
+        working-directory: ./
+        run: |  
+          npm run test
