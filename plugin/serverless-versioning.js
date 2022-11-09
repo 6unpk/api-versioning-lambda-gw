@@ -20,12 +20,12 @@ class ServerlessVersioning {
         this.apiGatewayName =  serverless.service.service
 
         this.hooks = {
-            'before:deploy:deploy': () => this.beforeDeploy(),
-            'after:deploy:deploy': () => this.postDeploy()
+            'before:deploy:deploy': () => this.postDeploy(),
+            // 'after:deploy:deploy': () => this.postDeploy()
         }
     }
 
-    beforeDeploy() {
+    async beforeDeploy() {
         const serviceFunctionNames = this.serverless.service.getAllFunctions();
         const clf = this.serverless.service.provider.compiledCloudFormationTemplate;
 
@@ -108,12 +108,23 @@ class ServerlessVersioning {
             // ...permissionProperties
         };
 
-        console.log(JSON.stringify(clf.Resources))
+        // console.log(JSON.stringify(clf.Resources))
     }
 
-    postDeploy() {
+    async postDeploy() {
         // 버전 할당 및 권한 할당은 Lambda 함수 배포 이후에 이루어져야함
+        // API 호출로 버전/권한/별칭 생성
+        const serviceFunctionNames = this.serverless.service.getAllFunctions();
 
+        for (const functionName of serviceFunctionNames) {
+            const result = await this.listVersionForFunction(`${this.apiGatewayName}-${this.stage}-${functionName}`);
+            console.log(result);            // 가장 최신 버전을 가져옵니다 (Latest 다음 버전)
+            const latestVersion = result[1].Version
+
+            // alias를 만듭니다.
+        }
+
+        throw new Error("뻐큐");
     }
 
     // resources: {
@@ -237,19 +248,6 @@ class ServerlessVersioning {
         }
     }
 
-    makeAlias(functionName) {
-        const stage = this.stage;
-        const apiGatewayName = this.apiGatewayName;
-        return {
-            Type: 'AWS::Lambda::Alias',
-            Properties: {
-                FunctionName: `${apiGatewayName}-${stage}-${functionName}`,
-                FunctionVersion: '',
-                Name: ''
-            }
-        }
-    }
-
     listVersionForFunction(functionName) {
         const params = {
             FunctionName: functionName
@@ -263,6 +261,15 @@ class ServerlessVersioning {
             });
     }
 
+    createAlias(functionVersion, version) {
+        const params = {
+            "FunctionVersion": functionVersion,
+            "Name": version
+        }
+
+        return this.makeLambdaRequest('createAlias', params, r => r)
+    }
+
     makeLambdaRequest(action, params, responseMapping) {
         const results = [];
         const responseHandler = response => {
@@ -272,7 +279,7 @@ class ServerlessVersioning {
                 return this.provider.request('Lambda', action, Object.assign({}, params, { Marker: response.NextMarker }))
                     .then(responseHandler);
             } else {
-                return BbPromise.resolve(results);
+                return results;
             }
         };
 
