@@ -28,6 +28,7 @@
     "webpack-node-externals": "^3.0.0"
   },
   "dependencies": {
+    "semver": "^7.3.8",
     "typescript": "^4.8.4"
   }
 }

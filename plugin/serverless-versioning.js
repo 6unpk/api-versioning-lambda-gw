@@ -1,12 +1,14 @@
 const {mappingTemplate} = require("../src/mapping-template");
-const statusCodeList = require("./statusCode")
+const statusCodeList = require("./statusCode");
+const semver = require('semver');
 
 class ServerlessVersioning {
     constructor(serverless, options) {
         this.serverless = serverless
 
         this.provider = this.serverless.getProvider('aws')
-        this.pathMap = {}
+        this.pathMap = {};
+        this.explicitVersion = null;
 
         serverless.configSchemaHandler.defineCustomProperties({
             type: 'object',
@@ -118,10 +120,11 @@ class ServerlessVersioning {
 
         for (const functionName of serviceFunctionNames) {
             const result = await this.listVersionForFunction(`${this.apiGatewayName}-${this.stage}-${functionName}`);
-            console.log(result);            // 가장 최신 버전을 가져옵니다 (Latest 다음 버전)
             const latestVersion = result[1].Version
 
+
             // alias를 만듭니다.
+            await this.createAlias(latestVersion, )
         }
 
         throw new Error("뻐큐");
