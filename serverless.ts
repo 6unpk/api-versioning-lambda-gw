@@ -15,7 +15,7 @@ const serverlessConfiguration: Serverless = {
     },
     custom: { // 버전을 지정한다.
       serverlessAPIVersioning: {
-        version: 'v0.0.8'
+        version: '0.0.8'
       }
     },
     provider: {
