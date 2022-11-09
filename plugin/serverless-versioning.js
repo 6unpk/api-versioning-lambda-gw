@@ -1,6 +1,7 @@
 const {mappingTemplate} = require("../src/mapping-template");
 const statusCodeList = require("./statusCode");
 const semver = require('semver');
+const { v4: uuidv4 } = require('uuid');
 
 class ServerlessVersioning {
     constructor(serverless, options) {
@@ -22,8 +23,8 @@ class ServerlessVersioning {
         this.apiGatewayName =  serverless.service.service
 
         this.hooks = {
-            'before:deploy:deploy': () => this.postDeploy(),
-            // 'after:deploy:deploy': () => this.postDeploy()
+            'before:deploy:deploy': () => this.beforeDeploy(),
+            'after:deploy:deploy': () => this.postDeploy()
         }
     }
 
@@ -39,6 +40,14 @@ class ServerlessVersioning {
         if (!this.serverless.service.custom?.serverlessAPIVersioning?.version) {
             throw Error("No serverlessAPIVersioning version specified")
         }
+
+        this.explicitVersion = this.serverless.service.custom?.serverlessAPIVersioning?.version;
+
+        if (semver.valid(this.explicitVersion) === null) {
+            throw  Error("Version is invalid. Must follow semantic version rule");
+        }
+
+        this.explicitVersion = this.explicitVersion.replaceAll('.', '_');
 
         const pathsList = []
         const functions = []
@@ -90,24 +99,12 @@ class ServerlessVersioning {
             methodProperties[`${functionName}`] = this.makeMethod(lastResourceName, method, functionName);
         }
 
-        // 권한 할당 하기
-        // const permissionProperties = {};
-        //
-        // for (const functionName of serviceFunctionNames) {
-        //     const _function = this.serverless.service.getFunction(functionName)
-        //     const {
-        //
-        //     } = _function.events[0];
-        //     permissionProperties[``] = this.makeAlias(functionName);
-        // }
-
         // 버전관리에 필요한 모든 리소스들을 정리
         clf.Resources = {
             ...clf.Resources,
             ...ApiGatewayRestApi,
             ...pathProperties,
             ...methodProperties,
-            // ...permissionProperties
         };
 
         // console.log(JSON.stringify(clf.Resources))
@@ -117,17 +114,19 @@ class ServerlessVersioning {
         // 버전 할당 및 권한 할당은 Lambda 함수 배포 이후에 이루어져야함
         // API 호출로 버전/권한/별칭 생성
         const serviceFunctionNames = this.serverless.service.getAllFunctions();
+        const aliasVersion = '0_0_8';
 
         for (const functionName of serviceFunctionNames) {
-            const result = await this.listVersionForFunction(`${this.apiGatewayName}-${this.stage}-${functionName}`);
+            const fulLFunctionName = `${this.apiGatewayName}-${this.stage}-${functionName}`;
+            const result = await this.listVersionForFunction(fulLFunctionName);
             const latestVersion = result[1].Version
 
-
             // alias를 만듭니다.
-            await this.createAlias(latestVersion, )
-        }
+            await this.createAlias(fulLFunctionName, latestVersion, aliasVersion);
 
-        throw new Error("뻐큐");
+            // api gateway 호출 권한을 할당합니다.
+            await this.createApiGatewayInvokePermission(fulLFunctionName, aliasVersion);
+        }
     }
 
     // resources: {
@@ -235,22 +234,6 @@ class ServerlessVersioning {
         }
     }
 
-    makePermission(functionName) {
-        const stage = this.stage;
-        const apiGatewayName = this.apiGatewayName;
-        return {
-            Type: 'AWS::Lambda::Permission',
-            Properties: {
-                Action: 'lambda:InvokeFunction',
-                FunctionName: `${apiGatewayName}-${stage}-${functionName}:9`,
-                Principal: 'apigateway.amazonaws.com',
-                SourceArn: {
-                    'Fn::Sub': 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*'
-                }
-            }
-        }
-    }
-
     listVersionForFunction(functionName) {
         const params = {
             FunctionName: functionName
@@ -264,13 +247,30 @@ class ServerlessVersioning {
             });
     }
 
-    createAlias(functionVersion, version) {
+    createAlias(functionName, functionVersion, version) {
         const params = {
+            "FunctionName": functionName,
             "FunctionVersion": functionVersion,
             "Name": version
         }
 
         return this.makeLambdaRequest('createAlias', params, r => r)
+    }
+
+    createApiGatewayInvokePermission(functionName, aliasVersion) {
+        const region = this.serverless.service.provider.region;
+        const accountId = '104318602314'; //FIXME
+        const apiGatewayId = '76ank3stw4'; //FIXME
+
+        const params = {
+            "FunctionName": `${functionName}:${aliasVersion}`,
+            "Action": "lambda:InvokeFunction",
+            "Principal": "apigateway.amazonaws.com",
+            "SourceArn": `arn:aws:execute-api:${region}:${accountId}:${apiGatewayId}/*/*`,
+            "StatementId": uuidv4()
+        }
+
+        return this.makeLambdaRequest('addPermission', params, r => r)
     }
 
     makeLambdaRequest(action, params, responseMapping) {
