@@ -1,8 +1,8 @@
-export const mappingTemplate = `
+export const mappingTemplate = (latestVersion: string) => `
   #set($version = $method.request.header.Version)
     
   #if(!$version ||$version == "")
-    #set($version = "1")
+    #set($version = "${latestVersion}")
   #end
     
   #set($context.requestOverride.path.version = $version)

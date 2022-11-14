@@ -114,7 +114,7 @@ class ServerlessVersioning {
         // 버전 할당 및 권한 할당은 Lambda 함수 배포 이후에 이루어져야함
         // API 호출로 버전/권한/별칭 생성
         const serviceFunctionNames = this.serverless.service.getAllFunctions();
-        const aliasVersion = '0_0_8';
+        const aliasVersion = this.explicitVersion;
 
         for (const functionName of serviceFunctionNames) {
             const fulLFunctionName = `${this.apiGatewayName}-${this.stage}-${functionName}`;
@@ -218,7 +218,7 @@ class ServerlessVersioning {
                     Type: 'AWS',
                         IntegrationHttpMethod: 'POST',
                         RequestTemplates: {
-                        'application/json': mappingTemplate
+                        'application/json': mappingTemplate(this.explicitVersion)
                     },
                     Uri: {
                         'Fn::Sub': `arn:aws:apigateway:\${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:\${AWS::Region}:\${AWS::AccountId}:function:${apiGatewayName}-${stage}-${functionName}:{version}/invocations`
@@ -257,16 +257,16 @@ class ServerlessVersioning {
         return this.makeLambdaRequest('createAlias', params, r => r)
     }
 
-    createApiGatewayInvokePermission(functionName, aliasVersion) {
+    async createApiGatewayInvokePermission(functionName, aliasVersion) {
         const region = this.serverless.service.provider.region;
-        const accountId = '104318602314'; //FIXME
-        const apiGatewayId = '76ank3stw4'; //FIXME
+        const accountId = await this.provider.getAccountId();
+        const apiGatewayId = '';
 
         const params = {
             "FunctionName": `${functionName}:${aliasVersion}`,
             "Action": "lambda:InvokeFunction",
             "Principal": "apigateway.amazonaws.com",
-            "SourceArn": `arn:aws:execute-api:${region}:${accountId}:${apiGatewayId}/*/*`,
+            "SourceArn": `arn:aws:execute-api:${region}:${accountId}:*/*/*`,
             "StatementId": uuidv4()
         }
 
