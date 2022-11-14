@@ -31,11 +31,33 @@ https://docs.aws.amazon.com/ko_kr/lambda/latest/dg/configuration-versions.html
 
 ### Prerequisite
 ```
-yarn
+npm install
 ```
 
 ### Run with test
 
 ```
-yarn run deploy
+npm run deploy
 ```
+
+버전관리를 실제로 테스트 하려면 두가지 값을 바꿉니다.
+
+버전 정보를 변경합니다.
+
+```yaml
+custom:
+  serverlessAPIVersioning:
+    version: '0.0.8' # -> 0.0.9
+```
+
+또는 ts 파일인 경우 다음과 같이 수정합니다.
+
+```typescript
+    custom: { // 버전을 지정한다.
+      serverlessAPIVersioning: {
+        version: '0.0.8' // -> 0.0.9
+      }
+    }
+```
+
+`npm run deploy` 실행 후 API Gateway 콘솔에서 확인해봅시다.
