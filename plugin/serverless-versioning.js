@@ -118,8 +118,8 @@ class ServerlessVersioning {
 
         for (const functionName of serviceFunctionNames) {
             const fulLFunctionName = `${this.apiGatewayName}-${this.stage}-${functionName}`;
-            const result = await this.listVersionForFunction(fulLFunctionName);
-            const latestVersion = result[1].Version
+            const result = (await this.listVersionForFunction(fulLFunctionName)).sort((a, b ) => (b.Version + '').localeCompare(a.version));
+            const latestVersion = result[0].Version
 
             // alias를 만듭니다.
             await this.createAlias(fulLFunctionName, latestVersion, aliasVersion);
